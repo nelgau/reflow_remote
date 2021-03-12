@@ -4,6 +4,8 @@
 import serial
 import serial.threaded
 
+import pyftdi.serialext
+
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -31,35 +33,10 @@ import profiling
 # settings
 #
 FIELD_NAMES = 'Phase,Time,Temp0,Temp1,Temp2,Temp3,ColdJ,Set,Actual,Heat,Fan'
-TTYs = ('/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyUSB2')
 BAUD_RATE = 115200
 
-
 def get_tty():
-	for devname in TTYs:
-		try:
-			ser = serial.Serial()
-
-			ser.port = devname
-			ser.baudrate = BAUD_RATE
-			ser.rtscts = False
-			ser.dsrdtr = False
-
-			ser.dtr = 0
-			ser.rts = 0
-
-			ser.open()
-
-			print('Using serial port %s' % ser.name)
-
-			return ser
-
-		except Exception as e:
-			print(e)
-			print('Tried serial port %s, but failed.' % str(devname))
-			pass
-
-	return None
+	return pyftdi.serialext.serial_for_url('ftdi://ftdi:232r/1', baudrate=BAUD_RATE)
 
 class T962Connection(serial.threaded.LineReader):
 	def __init__(self, consumer):
@@ -433,8 +410,7 @@ class ReflowView:
 
 def main():
 
-	pb = profiling.Builder()
-	pb.T_initial = 75
+	pb = profiling.Builder_Tweak()
 
 	profile = pb.build()
 	_, profile_samples = profile.sample(10, False)
@@ -457,14 +433,10 @@ def main():
 			try:
 				conn.synchronize()
 
-				conn.set_minimum_fan_speed(8)
+				conn.set_minimum_fan_speed(16)
 
 				conn.select_profile(4)
 				conn.save_profile(profile_samples)
-
-				# conn.start_bake(50)
-				# time.sleep(30)
-				# conn.abort_operation()
 
 				conn.select_profile(4)
 				conn.start_reflow()

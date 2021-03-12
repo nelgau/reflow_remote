@@ -29,6 +29,35 @@ class Profile:
 
 @dataclass
 class Builder:
+    def build(self):
+        t_preheat   = (self.T_soak_min - self.T_initial)  / self.ts_preheat
+        t_soak      = (self.T_soak_max - self.T_soak_min) / self.ts_soak
+        t_ramp_up   = (self.T_peak     - self.T_soak_max) / self.ts_ramp_up
+        t_ramp_down = (self.T_peak     - self.T_final)    / self.ts_ramp_down
+
+        t0 = self.t_initial
+        t1 = t0 + t_preheat
+        t2 = t1 + t_soak
+        t3 = t2 + t_ramp_up
+        t4 = t3 + self.t_peak
+        t5 = t4 + t_ramp_down
+
+        profile = Profile()
+        profile.add_point(t0, self.T_initial)
+        profile.add_point(t1, self.T_soak_min)
+        profile.add_point(t2, self.T_soak_max)
+        profile.add_point(t3, self.T_peak)
+        profile.add_point(t4, self.T_peak)
+        profile.add_point(t5, self.T_final)
+
+        return profile
+
+class Builder_Old(Builder):
+    ##
+    # Fan
+    #
+    sp_fan:         int   = 8
+
     ##
     # Temperatures
     #
@@ -55,25 +84,34 @@ class Builder:
     ts_ramp_up:     float = 1
     ts_ramp_down:   float = 1
 
-    def build(self):
-        t_preheat   = (self.T_soak_min - self.T_initial)  / self.ts_preheat
-        t_soak      = (self.T_soak_max - self.T_soak_min) / self.ts_soak
-        t_ramp_up   = (self.T_peak     - self.T_soak_max) / self.ts_ramp_up
-        t_ramp_down = (self.T_peak     - self.T_final)    / self.ts_ramp_down
+class Builder_Tweak(Builder):
+    ##
+    # Fan
+    #
+    sp_fan:         int   = 16
 
-        t0 = self.t_initial
-        t1 = t0 + t_preheat
-        t2 = t1 + t_soak
-        t3 = t2 + t_ramp_up
-        t4 = t3 + self.t_peak
-        t5 = t4 + t_ramp_down
+    ##
+    # Temperatures
+    #
+    T_liquidus:     float = 217
 
-        profile = Profile()
-        profile.add_point(t0, self.T_initial)
-        profile.add_point(t1, self.T_soak_min)
-        profile.add_point(t2, self.T_soak_max)
-        profile.add_point(t3, self.T_peak)
-        profile.add_point(t4, self.T_peak)
-        profile.add_point(t5, self.T_final)
+    T_initial:      float = 85
+    T_final:        float = 120
 
-        return profile
+    T_soak_min:     float = 125
+    T_soak_max:     float = 150
+    T_peak:         float = 220
+
+    ##
+    # Durations
+    #
+    t_initial:      float = 0
+    t_peak:         float = 30
+
+    ##
+    # Slopes
+    #
+    ts_preheat:     float = 1.2
+    ts_soak:        float = 0.15
+    ts_ramp_up:     float = 1
+    ts_ramp_down:   float = 1
